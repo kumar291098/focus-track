@@ -15,6 +15,120 @@ function isBrowser(appName: string): boolean {
          name === "msedge";
 }
 
+function extractDomainFromTitle(windowTitle: string): { domain: string; cleanTitle: string } | null {
+  if (!windowTitle) return null;
+
+  // 1. Clean the title by removing browser suffixes
+  let cleanTitle = windowTitle;
+  const browserSuffixes = [
+    / - Google Chrome$/i,
+    / - Microsoft Edge$/i,
+    / - Brave$/i,
+    / - Mozilla Firefox$/i,
+    / - Opera$/i,
+    / - Vivaldi$/i,
+    / - Safari$/i,
+    / - Chromium$/i,
+    / - msedge$/i,
+    / - chrome$/i
+  ];
+
+  for (const suffix of browserSuffixes) {
+    if (suffix.test(cleanTitle)) {
+      cleanTitle = cleanTitle.replace(suffix, "");
+      break;
+    }
+  }
+
+  cleanTitle = cleanTitle.trim();
+
+  // 2. Check for explicit domain in the title
+  // Looking for pattern like "example.com" or "sub.domain.org"
+  // Avoiding matching things like "Node.js" by validating the domain extension
+  const domainRegex = /\b((?:[a-z0-9-]+\.)+(?:com|org|net|edu|gov|io|co|dev|ai|me|info|biz|tv|cc|us|uk|ca|in|de|jp|fr|ru|br|au))\b/i;
+  const match = cleanTitle.match(domainRegex);
+  if (match && match[1]) {
+    let domain = match[1].toLowerCase();
+    if (domain.startsWith("www.")) {
+      domain = domain.substring(4);
+    }
+    // Make sure it doesn't match node.js or similar common terms
+    if (domain !== "node.js" && domain !== "chart.js" && domain !== "sql.js" && domain !== "three.js" && domain !== "vue.js" && domain !== "react.js" && domain !== "socket.io" && domain !== "d3.js") {
+      return { domain, cleanTitle };
+    }
+  }
+
+  // 3. Fallback to keyword-based detection for popular sites
+  const lowerTitle = cleanTitle.toLowerCase();
+  
+  const rules = [
+    { keywords: ["youtube"], domain: "youtube.com" },
+    { keywords: ["github"], domain: "github.com" },
+    { keywords: ["gitlab"], domain: "gitlab.com" },
+    { keywords: ["stackoverflow", "stack overflow"], domain: "stackoverflow.com" },
+    { keywords: ["stackexchange", "stack exchange"], domain: "stackexchange.com" },
+    { keywords: ["reddit"], domain: "reddit.com" },
+    { keywords: ["linkedin"], domain: "linkedin.com" },
+    { keywords: ["twitter", " x.com", "tweet"], domain: "twitter.com" },
+    { keywords: ["wikipedia"], domain: "wikipedia.org" },
+    { keywords: ["facebook"], domain: "facebook.com" },
+    { keywords: ["amazon"], domain: "amazon.com" },
+    { keywords: ["netflix"], domain: "netflix.com" },
+    { keywords: ["spotify"], domain: "spotify.com" },
+    { keywords: ["gmail", "google mail"], domain: "mail.google.com" },
+    { keywords: ["chatgpt", "openai"], domain: "chatgpt.com" },
+    { keywords: ["claude", "anthropic"], domain: "claude.ai" },
+    { keywords: ["notion"], domain: "notion.so" },
+    { keywords: ["slack"], domain: "slack.com" },
+    { keywords: ["figma"], domain: "figma.com" },
+    { keywords: ["google meet", "meet.google"], domain: "meet.google.com" },
+    { keywords: ["zoom"], domain: "zoom.us" },
+    { keywords: ["microsoft teams", "teams.microsoft"], domain: "teams.microsoft.com" },
+    { keywords: ["outlook", "hotmail"], domain: "outlook.live.com" },
+    { keywords: ["google docs", "google document"], domain: "docs.google.com" },
+    { keywords: ["google sheets", "google spreadsheet"], domain: "sheets.google.com" },
+    { keywords: ["medium"], domain: "medium.com" },
+    { keywords: ["npmjs", " npm "], domain: "npmjs.com" },
+    { keywords: ["stackblitz"], domain: "stackblitz.com" },
+    { keywords: ["vercel"], domain: "vercel.com" },
+    { keywords: ["netlify"], domain: "netlify.com" },
+    { keywords: ["firebase"], domain: "firebase.google.com" },
+    { keywords: ["aws", "amazon web services"], domain: "aws.amazon.com" },
+    { keywords: ["coursera"], domain: "coursera.org" },
+    { keywords: ["udemy"], domain: "udemy.com" },
+    { keywords: ["duolingo"], domain: "duolingo.com" },
+    { keywords: ["yahoo"], domain: "yahoo.com" },
+    { keywords: ["pinterest"], domain: "pinterest.com" },
+    { keywords: ["instagram"], domain: "instagram.com" },
+    { keywords: ["twitch"], domain: "twitch.tv" },
+    { keywords: ["quora"], domain: "quora.com" },
+    { keywords: ["tiktok"], domain: "tiktok.com" },
+    { keywords: ["dropbox"], domain: "dropbox.com" },
+    { keywords: ["whatsapp"], domain: "web.whatsapp.com" },
+    { keywords: ["telegram"], domain: "web.telegram.org" },
+    { keywords: ["discord"], domain: "discord.com" },
+    { keywords: ["w3schools"], domain: "w3schools.com" },
+    { keywords: ["geeksforgeeks"], domain: "geeksforgeeks.org" },
+    { keywords: ["mdn", "mozilla developer"], domain: "developer.mozilla.org" },
+    { keywords: ["trello"], domain: "trello.com" },
+    { keywords: ["canva"], domain: "canva.com" },
+    { keywords: ["dev.to"], domain: "dev.to" },
+    { keywords: ["google search", "google translation", "google translate"], domain: "google.com" }
+  ];
+
+  for (const rule of rules) {
+    if (rule.keywords.some(keyword => lowerTitle.includes(keyword))) {
+      return { domain: rule.domain, cleanTitle };
+    }
+  }
+
+  if (lowerTitle === "google" || lowerTitle.startsWith("google ")) {
+    return { domain: "google.com", cleanTitle };
+  }
+
+  return null;
+}
+
 export interface TrackingStatus {
   isTracking: boolean;
   pollIntervalMs: number;
@@ -155,9 +269,20 @@ export class ActivityTracker {
         }
 
         const latestWeb = getLatestWebActivity();
-        if (isBrowser(appName) && latestWeb && (Date.now() - latestWeb.timestamp < 15000)) {
-          nextAppName = `${appName} (${latestWeb.domain})`;
-          nextWindowTitle = latestWeb.title || title;
+        if (isBrowser(appName)) {
+          if (latestWeb && (Date.now() - latestWeb.timestamp < 15000)) {
+            nextAppName = `${appName} (${latestWeb.domain})`;
+            nextWindowTitle = latestWeb.title || title;
+          } else {
+            const fallback = extractDomainFromTitle(title);
+            if (fallback) {
+              nextAppName = `${appName} (${fallback.domain})`;
+              nextWindowTitle = fallback.cleanTitle;
+            } else {
+              nextAppName = appName;
+              nextWindowTitle = title;
+            }
+          }
         } else {
           nextAppName = appName;
           nextWindowTitle = title;

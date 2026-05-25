@@ -54,6 +54,19 @@ export default function SettingsTab({
       </div>
 
       <div className="settings-section">
+        <h3>Standalone Tracking Mode</h3>
+        <div className="settings-row-glass" style={{ borderLeft: "4px solid #3b82f6" }}>
+          <div>
+            <h4>⚡ Local & Fully Autonomous</h4>
+            <p className="sidebar-copy" style={{ color: "#e2e8f0" }}>
+              FocusTrack runs completely offline and standalone. It monitors active windows and extracts website domains (like <strong>github.com</strong> or <strong>youtube.com</strong>) directly from browser titles. No internet connection or servers are required.
+            </p>
+            <p className="sidebar-copy" style={{ fontSize: "0.8rem", marginTop: "0.5rem", color: "#94a3b8" }}>
+              💡 <em>Optional: The companion browser extension can be installed to track granular, deep URLs for uncommon domains, but is not needed for daily, standalone use.</em>
+            </p>
+          </div>
+        </div>
+
         <h3>Tracking Control</h3>
         <div className="settings-row-glass">
           <div>

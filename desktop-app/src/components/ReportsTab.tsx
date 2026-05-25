@@ -51,7 +51,12 @@ export default function ReportsTab({
   const [rangeType, setRangeType] = useState<"today" | "weekly" | "monthly" | "custom">("weekly");
   
   // Custom range dates (default to 7 days ago until today)
-  const getFormattedDate = (d: Date) => d.toISOString().split("T")[0];
+  const getFormattedDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);

@@ -377,7 +377,10 @@ function Dashboard() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       const dayLabel = days[d.getDay()];
       dailyMap.set(dateStr, {
         label: dayLabel,
@@ -390,7 +393,11 @@ function Dashboard() {
     }
 
     snapshot.recentSessions.forEach(session => {
-      const dateStr = new Date(session.startTime).toISOString().split('T')[0];
+      const d = new Date(session.startTime);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       if (dailyMap.has(dateStr)) {
         const data = dailyMap.get(dateStr)!;
         const cat = getAppCategoryLocal(session.appName);
