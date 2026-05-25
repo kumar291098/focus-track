@@ -1237,6 +1237,98 @@ button, input, select {
   box-shadow: 0 4px 15px rgba(45, 212, 191, 0.25) !important;
 }
 
+/* Interactive Progress Loader */
+.progress-interactive-container {
+  width: 100%;
+  margin-bottom: 2.2rem;
+  text-align: left;
+}
+
+.progress-interactive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.progress-interactive-status {
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+}
+
+.progress-interactive-percent {
+  font-family: var(--font-heading);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.progress-interactive-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.progress-interactive-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-secondary));
+  box-shadow: 0 0 10px var(--color-accent-glow);
+  transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading-error-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.error-icon {
+  font-size: 1.8rem;
+}
+
+.loading-error-action p {
+  font-size: 0.88rem;
+  color: var(--color-distracting);
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Ambient background glows for React loader */
+.loading-screen .boot-glow-1 {
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  animation: ambientGlow 8s infinite alternate ease-in-out;
+}
+
+.loading-screen .boot-glow-2 {
+  position: absolute;
+  bottom: 20%;
+  right: 20%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  animation: ambientGlow 10s infinite alternate-reverse ease-in-out;
+}
+
 /* Media Queries & Responsive styling */
 @media (max-width: 1280px) {
   .stats-row {

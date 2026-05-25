@@ -4,15 +4,273 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FocusTrack</title>
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+      :root {
+        --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+        --font-body: 'Inter', system-ui, sans-serif;
+        --bg-deep: #080b11;
+        --color-accent: #2dd4bf;
+        --color-accent-glow: rgba(45, 212, 191, 0.25);
+        --color-accent-secondary: #6366f1;
+        --text-main: #f3f4f6;
+        --text-muted: #9ca3af;
+        --text-dim: #6b7280;
+      }
+      
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        font-family: var(--font-body);
+        background-color: var(--bg-deep);
+        color: var(--text-main);
+        overflow: hidden;
+      }
+
+      .boot-screen {
+        background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Animated ambient glowing spots */
+      .boot-glow-1 {
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(45, 212, 191, 0.05) 0%, transparent 70%);
+        pointer-events: none;
+        animation: ambientGlow 8s infinite alternate ease-in-out;
+      }
+
+      .boot-glow-2 {
+        position: absolute;
+        bottom: 20%;
+        right: 20%;
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+        pointer-events: none;
+        animation: ambientGlow 10s infinite alternate-reverse ease-in-out;
+      }
+
+      .boot-card {
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(45, 212, 191, 0.15);
+        border-radius: 32px;
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        padding: 4rem 3.5rem;
+        width: 480px;
+        max-width: 90%;
+        box-shadow: 
+          0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          0 0 50px rgba(45, 212, 191, 0.05);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .boot-logo-container {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        margin-bottom: 2.2rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .boot-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 0 30px rgba(45, 212, 191, 0.3);
+        z-index: 2;
+        animation: logoPulse 2.5s infinite ease-in-out;
+      }
+
+      .boot-mark {
+        font-family: var(--font-heading);
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #020617;
+        letter-spacing: -0.05em;
+      }
+
+      .pulse-ring {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        border-radius: 24px;
+        border: 2px solid var(--color-accent);
+        opacity: 0.6;
+        z-index: 1;
+        animation: ripple 2.5s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+      }
+
+      .ring-delay-1 {
+        animation-delay: 0.8s;
+      }
+
+      .ring-delay-2 {
+        animation-delay: 1.6s;
+      }
+
+      .boot-brand-tag {
+        font-family: var(--font-heading);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--color-accent);
+        margin: 0 0 0.5rem 0;
+        animation: fadeInUp 0.8s ease 0.2s both;
+      }
+
+      .boot-title {
+        font-family: var(--font-heading);
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0 0 0.75rem 0;
+        animation: fadeInUp 0.8s ease 0.3s both;
+      }
+
+      .boot-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 0 0 2.5rem 0;
+        line-height: 1.5;
+        max-width: 36ch;
+        animation: fadeInUp 0.8s ease 0.4s both;
+      }
+
+      /* Premium Loading Bar */
+      .boot-progress-container {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 99px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        animation: fadeInUp 0.8s ease 0.5s both;
+      }
+
+      .boot-progress-fill {
+        height: 100%;
+        width: 40%;
+        background: linear-gradient(90deg, var(--color-accent), var(--color-accent-secondary));
+        border-radius: 99px;
+        position: absolute;
+        left: -40%;
+        animation: progressSlide 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 10px var(--color-accent);
+      }
+
+      .boot-status-msg {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        animation: fadeInUp 0.8s ease 0.6s both;
+      }
+
+      .boot-status-dot {
+        width: 6px;
+        height: 6px;
+        background-color: var(--color-accent);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--color-accent);
+        animation: pulseDot 1.5s infinite alternate ease-in-out;
+      }
+
+      /* Keyframe Animations */
+      @keyframes cardFadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes logoPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(45, 212, 191, 0.3); }
+        50% { transform: scale(1.05); box-shadow: 0 0 45px rgba(45, 212, 191, 0.5); }
+      }
+
+      @keyframes ripple {
+        0% { transform: scale(1); opacity: 0.8; border-color: rgba(45, 212, 191, 0.6); }
+        100% { transform: scale(2.2); opacity: 0; border-color: rgba(99, 102, 241, 0); }
+      }
+
+      @keyframes progressSlide {
+        0% { left: -40%; }
+        50% { left: 100%; }
+        100% { left: 100%; }
+      }
+
+      @keyframes pulseDot {
+        from { opacity: 0.3; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1.2); }
+      }
+
+      @keyframes ambientGlow {
+        from { transform: translate(0, 0) scale(1); }
+        to { transform: translate(50px, 30px) scale(1.2); }
+      }
+    </style>
   </head>
   <body>
     <div id="root">
       <main class="boot-screen">
+        <div class="boot-glow-1"></div>
+        <div class="boot-glow-2"></div>
         <section class="boot-card">
-          <div class="boot-mark">FT</div>
-          <p>FocusTrack is launching</p>
-          <h1>Preparing your local activity dashboard</h1>
-          <span>Starting tracker, opening SQLite, and loading today's sessions...</span>
+          <div class="boot-logo-container">
+            <div class="boot-logo">
+              <span class="boot-mark">FT</span>
+            </div>
+            <div class="pulse-ring"></div>
+            <div class="pulse-ring ring-delay-1"></div>
+            <div class="pulse-ring ring-delay-2"></div>
+          </div>
+          <p class="boot-brand-tag">FocusTrack v1.0.1</p>
+          <h1 class="boot-title">FocusTrack is launching</h1>
+          <p class="boot-desc">Preparing your local activity dashboard</p>
+          
+          <div class="boot-progress-container">
+            <div class="boot-progress-fill"></div>
+          </div>
+
+          <div class="boot-status-msg">
+            <span class="boot-status-dot"></span>
+            <span>Starting tracker, opening SQLite database, and loading sessions...</span>
+          </div>
         </section>
       </main>
     </div>
