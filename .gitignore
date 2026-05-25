@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+Thumbs.db
+desktop-app/dist/
+desktop-app/dist-electron/
+desktop-app/node_modules/
+desktop-app/release/
