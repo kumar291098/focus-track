@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "FocusTrack Companion",
+  "version": "1.1.0",
+  "description": "Companion extension for FocusTrack to securely sync active website usage with the desktop application.",
+  "permissions": [
+    "tabs",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

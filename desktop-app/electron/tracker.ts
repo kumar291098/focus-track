@@ -1,7 +1,19 @@
+import path from "node:path";
 import activeWin from "active-win";
+import { powerMonitor } from "electron";
 import { DashboardSnapshot, FocusTrackDatabase } from "./database.js";
+import { getLatestWebActivity } from "./server.js";
 
-const POLL_INTERVAL_MS = 5_000;
+function isBrowser(appName: string): boolean {
+  const name = appName.toLowerCase();
+  return name.includes("chrome") || 
+         name.includes("edge") || 
+         name.includes("firefox") || 
+         name.includes("brave") || 
+         name.includes("opera") || 
+         name.includes("safari") || 
+         name === "msedge";
+}
 
 export interface TrackingStatus {
   isTracking: boolean;
@@ -43,11 +55,13 @@ export class ActivityTracker {
       return;
     }
 
+    const intervalMs = Number(this.db.getSetting("poll_interval_ms", "5000"));
+
     void this.poll();
     this.timer = setInterval(() => {
       this.persistCurrentSession(new Date());
       void this.poll();
-    }, POLL_INTERVAL_MS);
+    }, intervalMs);
   }
 
   stop() {
@@ -59,10 +73,16 @@ export class ActivityTracker {
     this.flushCurrentSession(new Date());
   }
 
+  restart() {
+    this.stop();
+    this.start();
+  }
+
   getStatus(): TrackingStatus {
+    const intervalMs = Number(this.db.getSetting("poll_interval_ms", "5000"));
     return {
       isTracking: this.timer !== null,
-      pollIntervalMs: POLL_INTERVAL_MS,
+      pollIntervalMs: intervalMs,
       currentSession: this.currentSession
           ? {
             appName: this.currentSession.appName,
@@ -78,8 +98,8 @@ export class ActivityTracker {
     };
   }
 
-  getDashboardSnapshot(): DashboardSnapshot {
-    return this.db.getDashboardSnapshot(this.getActiveSessionForDashboard());
+  getDashboardSnapshot(range: "today" | "weekly" | "all" = "today"): DashboardSnapshot {
+    return this.db.getDashboardSnapshot(this.getActiveSessionForDashboard(), range);
   }
 
   private async poll() {
@@ -90,16 +110,59 @@ export class ActivityTracker {
     this.isPolling = true;
 
     try {
-      const result = await activeWin();
+      const idleThreshold = Number(this.db.getSetting("idle_threshold_seconds", "60"));
+      const systemIdleTime = powerMonitor.getSystemIdleTime();
+      const isIdle = systemIdleTime >= idleThreshold;
+
       const now = new Date();
+      let nextAppName = "";
+      let nextWindowTitle = "";
 
-      if (!result?.owner?.name) {
-        this.flushCurrentSession(now);
-        return;
+      if (isIdle) {
+        nextAppName = "Idle / Away";
+        nextWindowTitle = `Away from computer (idle for ${systemIdleTime}s)`;
+      } else {
+        const result = await activeWin();
+
+        if (!result?.owner?.name) {
+          this.flushCurrentSession(now);
+          return;
+        }
+
+        let appName = result.owner.name.trim() || "Unknown App";
+        const title = result.title?.trim() || "Untitled Window";
+        const execPath = result.owner.path;
+
+        // 1. Uniquely recognize this app (FocusTrack)
+        if (
+          title.includes("FocusTrack") || 
+          (execPath && (execPath.toLowerCase().includes("focustrack") || execPath.toLowerCase().includes("focus-track")))
+        ) {
+          appName = "FocusTrack";
+        } 
+        // 2. Recognize other Electron apps separately based on their executable name
+        else if (appName.toLowerCase() === "electron" || appName.toLowerCase() === "electron.exe") {
+          if (execPath) {
+            const baseName = path.basename(execPath, path.extname(execPath));
+            if (baseName && baseName.toLowerCase() !== "electron") {
+              appName = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+            } else {
+              appName = "Electron App";
+            }
+          } else {
+            appName = "Electron App";
+          }
+        }
+
+        const latestWeb = getLatestWebActivity();
+        if (isBrowser(appName) && latestWeb && (Date.now() - latestWeb.timestamp < 15000)) {
+          nextAppName = `${appName} (${latestWeb.domain})`;
+          nextWindowTitle = latestWeb.title || title;
+        } else {
+          nextAppName = appName;
+          nextWindowTitle = title;
+        }
       }
-
-      const nextAppName = result.owner.name.trim() || "Unknown App";
-      const nextWindowTitle = result.title?.trim() || "Untitled Window";
 
       if (!this.currentSession) {
         this.currentSession = this.createSession(nextAppName, nextWindowTitle, now);
@@ -132,11 +195,6 @@ export class ActivityTracker {
     if (!this.currentSession) {
       return;
     }
-
-    const durationSeconds = Math.max(
-      1,
-      Math.round((endTime.getTime() - this.currentSession.startedAt.getTime()) / 1000)
-    );
 
     this.persistCurrentSession(endTime);
     this.currentSession = null;

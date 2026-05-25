@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 260px;
+      margin: 0;
+      padding: 16px;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0b111e 0%, #080b11 100%);
+      color: #f3f4f6;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #2dd4bf;
+      letter-spacing: -0.5px;
+    }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 12px;
+    }
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .indicator.connected {
+      background-color: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .value {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #f3f4f6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 8px;
+    }
+    .footer {
+      font-size: 0.7rem;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">FocusTrack</div>
+  </div>
+  
+  <div class="status-badge">
+    <div id="status-indicator" class="indicator"></div>
+    <span id="status-text">Connecting...</span>
+  </div>
+
+  <div class="label">Current Tab</div>
+  <div id="current-tab" class="value">Loading...</div>
+
+  <div class="footer">FocusTrack Companion Extension</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
