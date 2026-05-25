@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -97,14 +97,81 @@ function formatTooltipMinutes(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-function App() {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = {
+    error: null
+  };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("FocusTrack renderer crashed", error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <LoadingScreen
+          title="FocusTrack needs a quick restart"
+          message={this.state.error.message}
+          tone="error"
+        />
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function LoadingScreen({
+  title,
+  message,
+  tone = "loading"
+}: {
+  title: string;
+  message: string;
+  tone?: "loading" | "error";
+}) {
+  return (
+    <main className={`loading-screen ${tone}`}>
+      <div className="loading-card">
+        <img className="loading-logo" src={codingHelpLogo} alt="CodingHelp logo" />
+        <div className="pulse-ring" />
+        <p className="eyebrow">FocusTrack</p>
+        <h1>{title}</h1>
+        <p>{message}</p>
+        <div className="loading-steps">
+          <span>Starting desktop tracker</span>
+          <span>Opening local SQLite database</span>
+          <span>Preparing today dashboard</span>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function Dashboard() {
   const [version, setVersion] = useState("loading...");
   const [snapshot, setSnapshot] = useState<DashboardSnapshot>(emptySnapshot);
   const [trackingStatus, setTrackingStatus] = useState<TrackingStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!window.focusTrack) {
       setVersion("dev-mode");
+      setIsLoading(false);
+      setLoadError("Desktop bridge is unavailable. Start FocusTrack through Electron or the installed app.");
       return;
     }
 
@@ -120,15 +187,23 @@ function App() {
     }
 
     const load = () => {
-      void window.focusTrack!
-        .getDashboardSnapshot()
-        .then(setSnapshot)
-        .catch(() => setSnapshot(emptySnapshot));
-
-      void window.focusTrack!
-        .getTrackingStatus()
-        .then(setTrackingStatus)
-        .catch(() => setTrackingStatus(null));
+      void Promise.all([
+        window.focusTrack!.getDashboardSnapshot(),
+        window.focusTrack!.getTrackingStatus()
+      ])
+        .then(([nextSnapshot, nextStatus]) => {
+          setSnapshot(nextSnapshot);
+          setTrackingStatus(nextStatus);
+          setLoadError(nextStatus?.lastError ?? null);
+        })
+        .catch((error: unknown) => {
+          setSnapshot(emptySnapshot);
+          setTrackingStatus(null);
+          setLoadError(
+            error instanceof Error ? error.message : "Unable to load local activity data."
+          );
+        })
+        .finally(() => setIsLoading(false));
     };
 
     load();
@@ -155,6 +230,18 @@ function App() {
   }));
 
   const topApp = appUsage[0];
+  const hasAppUsage = appUsage.some((item) => item.seconds > 0);
+  const hasHourlyUsage = hourlyUsage.some((item) => item.seconds > 0);
+  const hasCategoryUsage = categories.some((item) => item.value > 0);
+
+  if (isLoading) {
+    return (
+      <LoadingScreen
+        title="Starting your focus dashboard"
+        message="FocusTrack is connecting to the local tracker and preparing today's usage data."
+      />
+    );
+  }
 
   return (
     <div className="shell">
@@ -201,6 +288,7 @@ function App() {
             </p>
           ) : null}
           {trackingStatus?.lastError ? <p>Error: {trackingStatus.lastError}</p> : null}
+          {loadError && !trackingStatus?.lastError ? <p>{loadError}</p> : null}
         </div>
       </aside>
 
@@ -210,8 +298,9 @@ function App() {
             <p className="eyebrow">Today Summary</p>
             <h2>{formatDuration(snapshot.todayTotalSeconds)}</h2>
             <p className="hero-copy">
-              This dashboard now reads local activity sessions from `focustrack.db`
-              and refreshes automatically while tracking is active.
+              {snapshot.sessionCount > 0
+                ? "Your local activity is syncing into focustrack.db and this view refreshes automatically."
+                : "Keep this app open for a few seconds, then switch between apps to build your first activity sessions."}
             </p>
           </div>
 
@@ -241,19 +330,23 @@ function App() {
             </div>
 
             <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={appUsage.length > 0 ? appUsage : [{ name: "No data", seconds: 0, color: "#334155" }]}>
-                  <CartesianGrid stroke="#263447" vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <Tooltip formatter={formatTooltipMinutes} />
-                  <Bar dataKey="seconds" radius={[10, 10, 0, 0]}>
-                    {(appUsage.length > 0 ? appUsage : [{ name: "No data", seconds: 0, color: "#334155" }]).map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              {hasAppUsage ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={appUsage}>
+                    <CartesianGrid stroke="#263447" vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <Tooltip formatter={formatTooltipMinutes} />
+                    <Bar dataKey="seconds" radius={[10, 10, 0, 0]}>
+                      {appUsage.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChart message="Waiting for your first tracked app session." />
+              )}
             </div>
           </article>
 
@@ -266,23 +359,27 @@ function App() {
             </div>
 
             <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={categories}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={65}
-                    outerRadius={95}
-                    paddingAngle={4}
-                  >
-                    {categories.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={formatTooltipMinutes} />
-                </PieChart>
-              </ResponsiveContainer>
+              {hasCategoryUsage ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={categories}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={65}
+                      outerRadius={95}
+                      paddingAngle={4}
+                    >
+                      {categories.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={formatTooltipMinutes} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChart message="Categories appear after activity is recorded." />
+              )}
             </div>
 
             <div className="legend">
@@ -310,15 +407,19 @@ function App() {
             </div>
 
             <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={hourlyUsage}>
-                  <CartesianGrid stroke="#263447" vertical={false} />
-                  <XAxis dataKey="hour" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <Tooltip formatter={formatTooltipMinutes} />
-                  <Bar dataKey="seconds" fill="#2dd4bf" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {hasHourlyUsage ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={hourlyUsage}>
+                    <CartesianGrid stroke="#263447" vertical={false} />
+                    <XAxis dataKey="hour" tickLine={false} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <Tooltip formatter={formatTooltipMinutes} />
+                    <Bar dataKey="seconds" fill="#2dd4bf" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChart message="Hourly activity will fill in as FocusTrack observes app usage." />
+              )}
             </div>
           </article>
 
@@ -340,6 +441,24 @@ function App() {
         </section>
       </main>
     </div>
+  );
+}
+
+function EmptyChart({ message }: { message: string }) {
+  return (
+    <div className="empty-chart">
+      <div className="empty-orbit" />
+      <strong>No activity yet</strong>
+      <p>{message}</p>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <Dashboard />
+    </ErrorBoundary>
   );
 }
 
