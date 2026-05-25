@@ -31,6 +31,51 @@ button {
   min-height: 100vh;
 }
 
+.boot-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(45, 212, 191, 0.18), transparent 28%),
+    linear-gradient(135deg, #020617 0%, #0f172a 52%, #111827 100%);
+}
+
+.boot-card {
+  width: min(480px, 100%);
+  padding: 2rem;
+  text-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 28px;
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+
+.boot-mark {
+  display: inline-grid;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 1rem;
+  place-items: center;
+  color: #06121f;
+  font-weight: 800;
+  border-radius: 24px;
+  background: #2dd4bf;
+}
+
+.boot-card p,
+.boot-card span {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.boot-card h1 {
+  margin: 0.5rem 0 0.8rem;
+  color: #f8fafc;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
 .loading-screen {
   display: grid;
   min-height: 100vh;
@@ -297,6 +342,51 @@ button {
   margin-bottom: 1.5rem;
 }
 
+.live-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(45, 212, 191, 0.24);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.16), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.live-panel h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.5rem;
+}
+
+.live-panel p {
+  max-width: 70ch;
+  margin: 0.35rem 0 0;
+  overflow: hidden;
+  color: #94a3b8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-meta {
+  display: grid;
+  min-width: 150px;
+  justify-items: end;
+  gap: 0.2rem;
+}
+
+.live-meta span {
+  color: #99f6e4;
+  font-size: 0.9rem;
+}
+
+.live-meta strong {
+  color: #f8fafc;
+  font-size: 1.8rem;
+}
+
 .stats-grid {
   grid-template-columns: 1.3fr 1fr;
 }
@@ -410,8 +500,13 @@ button {
   .shell,
   .stats-grid,
   .bottom-grid,
-  .hero-card {
+  .hero-card,
+  .live-panel {
     grid-template-columns: 1fr;
+  }
+
+  .live-meta {
+    justify-items: start;
   }
 }
 

@@ -79,7 +79,7 @@ export class ActivityTracker {
   }
 
   getDashboardSnapshot(): DashboardSnapshot {
-    return this.db.getDashboardSnapshot();
+    return this.db.getDashboardSnapshot(this.getActiveSessionForDashboard());
   }
 
   private async poll() {
@@ -192,6 +192,7 @@ export class ActivityTracker {
     );
 
     return {
+      id: this.currentSession.id,
       appName: this.currentSession.appName,
       windowTitle: this.currentSession.windowTitle,
       startTime: this.currentSession.startedAt.toISOString(),

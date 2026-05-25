@@ -21,6 +21,7 @@ export interface DashboardSnapshot {
 }
 
 export type AppActivitySession = Omit<AppActivityRow, "id">;
+export type LiveAppActivitySession = AppActivitySession & { id?: number };
 
 const PRODUCTIVE_APPS = new Set([
   "visual studio code",
@@ -169,7 +170,7 @@ export class FocusTrackDatabase {
     this.persist();
   }
 
-  getDashboardSnapshot(activeSession?: AppActivitySession): DashboardSnapshot {
+  getDashboardSnapshot(activeSession?: LiveAppActivitySession): DashboardSnapshot {
     const todayStart = startOfToday();
     const todayEnd = new Date(todayStart);
     todayEnd.setDate(todayEnd.getDate() + 1);
@@ -199,9 +200,19 @@ export class FocusTrackDatabase {
 
     statement.free();
 
+    if (activeSession?.id) {
+      const existingSessionIndex = sessions.findIndex(
+        (session) => session.id === activeSession.id
+      );
+
+      if (existingSessionIndex >= 0) {
+        sessions.splice(existingSessionIndex, 1);
+      }
+    }
+
     if (activeSession) {
       sessions.unshift({
-        id: 0,
+        id: activeSession.id ?? 0,
         ...activeSession
       });
     }

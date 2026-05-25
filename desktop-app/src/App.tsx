@@ -186,6 +186,8 @@ function Dashboard() {
       return;
     }
 
+    const loadingStartedAt = Date.now();
+
     const load = () => {
       void Promise.all([
         window.focusTrack!.getDashboardSnapshot(),
@@ -203,11 +205,15 @@ function Dashboard() {
             error instanceof Error ? error.message : "Unable to load local activity data."
           );
         })
-        .finally(() => setIsLoading(false));
+        .finally(() => {
+          const elapsed = Date.now() - loadingStartedAt;
+          const delay = Math.max(0, 1200 - elapsed);
+          window.setTimeout(() => setIsLoading(false), delay);
+        });
     };
 
     load();
-    const interval = window.setInterval(load, 5_000);
+    const interval = window.setInterval(load, 1_000);
 
     return () => window.clearInterval(interval);
   }, []);
@@ -317,6 +323,23 @@ function Dashboard() {
               <span>Sessions Today</span>
               <strong>{snapshot.sessionCount}</strong>
             </div>
+          </div>
+        </section>
+
+        <section className="live-panel">
+          <div>
+            <p className="eyebrow">Live Activity</p>
+            <h3>{trackingStatus?.currentSession?.appName ?? "Waiting for active app"}</h3>
+            <p>
+              {trackingStatus?.currentSession?.windowTitle ??
+                "FocusTrack is watching for the foreground window."}
+            </p>
+          </div>
+          <div className="live-meta">
+            <span>{trackingStatus?.isTracking ? "Tracker running" : "Tracker starting"}</span>
+            <strong>
+              {formatDuration(trackingStatus?.currentSession?.durationSeconds ?? 0)}
+            </strong>
           </div>
         </section>
 
@@ -432,10 +455,19 @@ function Dashboard() {
             </div>
 
             <ul className="task-list">
-              <li>SQLite database is now created locally as `focustrack.db`</li>
-              <li>Active window tracking is polling every 5 seconds</li>
-              <li>Desktop sessions are being saved into `app_activity`</li>
-              <li>Next up is idle detection and weekly reporting</li>
+              {snapshot.recentSessions.length > 0 ? (
+                snapshot.recentSessions.slice(0, 4).map((session) => (
+                  <li key={`${session.id}-${session.startTime}`}>
+                    {session.appName} - {formatDuration(session.durationSeconds)}
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li>FocusTrack is creating the first local activity session.</li>
+                  <li>Switch to another app and keep it active for a few seconds.</li>
+                  <li>The report refreshes every second while tracking is active.</li>
+                </>
+              )}
             </ul>
           </article>
         </section>
