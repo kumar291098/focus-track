@@ -154,14 +154,32 @@ app.whenReady()
     updateTrayMenu();
 
     // Configure autostart by default on first launch if not configured yet
-    const autostartConfigured = database.getSetting("autostart_configured", "false");
-    if (autostartConfigured !== "true") {
-      app.setLoginItemSettings({
-        openAtLogin: true,
-        path: app.getPath("exe")
-      });
-      database.saveSetting("autostart_configured", "true");
-      writeStartupLog("First-run auto-start enabled by default");
+    if (app.isPackaged) {
+      const loginSettings = app.getLoginItemSettings() as any;
+      const autostartConfigured = database.getSetting("autostart_configured", "false");
+      if (autostartConfigured !== "true" || loginSettings.path !== app.getPath("exe")) {
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          path: app.getPath("exe")
+        });
+        database.saveSetting("autostart_configured", "true");
+        writeStartupLog(`First-run auto-start enabled/updated by default for: ${app.getPath("exe")}`);
+      }
+    } else {
+      writeStartupLog("Auto-start configuration skipped in development mode");
+      // Clean up any stray/broken development auto-start settings pointing to electron.exe
+      try {
+        const loginSettings = app.getLoginItemSettings() as any;
+        if (loginSettings.openAtLogin && loginSettings.path && loginSettings.path.toLowerCase().includes("electron.exe")) {
+          app.setLoginItemSettings({
+            openAtLogin: false,
+            path: loginSettings.path
+          });
+          writeStartupLog("Cleaned up broken development auto-start registry entry");
+        }
+      } catch (err) {
+        writeStartupLog("Failed to clean up development auto-start settings", err);
+      }
     }
 
     powerMonitor.on("shutdown", () => {
@@ -225,13 +243,20 @@ app.whenReady()
       return database.getHistoryDates();
     });
     ipcMain.handle("app:get-login-item-settings", () => {
+      if (!app.isPackaged) {
+        return false;
+      }
       return app.getLoginItemSettings().openAtLogin;
     });
     ipcMain.handle("app:set-login-item-settings", (event, openAtLogin: boolean) => {
-      app.setLoginItemSettings({
-        openAtLogin,
-        path: app.getPath("exe")
-      });
+      if (app.isPackaged) {
+        app.setLoginItemSettings({
+          openAtLogin,
+          path: app.getPath("exe")
+        });
+      } else {
+        writeStartupLog(`Skipped changing autostart to ${openAtLogin} in development mode`);
+      }
       return openAtLogin;
     });
 

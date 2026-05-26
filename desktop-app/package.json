@@ -1,6 +1,6 @@
 {
   "name": "focus-track-desktop-app",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Electron + React desktop app for FocusTrack",
   "main": "dist-electron/electron/main.js",
